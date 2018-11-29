@@ -9,7 +9,6 @@ import (
 	"io/ioutil"
 	"os"
 	"os/exec"
-	"path"
 	"path/filepath"
 	"sort"
 	"strconv"
@@ -18,10 +17,11 @@ import (
 )
 
 const (
-	layout         = "2006-01-02T15:04:05.000Z"
-	zebedeeRootEnv = "zebedee_root"
-	zebedeeDir     = "zebedee"
-	publishLogDir  = "publish-log"
+	layout           = "2006-01-02T15:04:05.000Z"
+	publishLogDirEnv = "PUBLISH_LOG_DIR"
+	zebedeeRootEnv   = "zebedee_root"
+	zebedeeDir       = "zebedee"
+	publishLogDir    = "publish-log"
 
 	// commands
 	quit            = "q"
@@ -43,15 +43,15 @@ func main() {
 	console.Init()
 	log.HumanReadable = true
 
-	publishLogFlag := flag.String("publishLog", "", "")
+	publishLogFlag := flag.String("publishLogDir", "", "override - use this value instead of the env config")
 	flag.Parse()
 
 	if len(*publishLogFlag) > 0 {
 		log.Info("setting publish log path from cmd flag", nil)
 		publishLogPath = *publishLogFlag
 	} else {
-		log.Info("setting publish log path from os env var", nil)
-		publishLogPath = path.Join(os.Getenv(zebedeeRootEnv), zebedeeDir, publishLogDir)
+		publishLogPath = os.Getenv(publishLogDirEnv)
+		log.Info("setting publish log path from os env var", log.Data{publishLogDirEnv: publishLogPath})
 	}
 
 	log.Info("config", log.Data{"publishLogPath": publishLogPath})
