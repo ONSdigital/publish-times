@@ -3,6 +3,7 @@ package main
 import (
 	"bufio"
 	"encoding/json"
+	"flag"
 	"github.com/ONSdigital/go-ns/log"
 	"github.com/daiLlew/publish-times/console"
 	"io/ioutil"
@@ -41,7 +42,23 @@ type publishTimes struct {
 func main() {
 	console.Init()
 	log.HumanReadable = true
-	publishLogPath = path.Join(os.Getenv(zebedeeRootEnv), zebedeeDir, publishLogDir)
+
+	zebRootFlag := flag.String("zebRoot", "", "")
+	flag.Parse()
+
+	var zebedeeRoot string
+
+	if len(*zebRootFlag) > 0 {
+		log.Info("setting zebedeeRoot from cmd flag", nil)
+		zebedeeRoot = *zebRootFlag
+	} else {
+		log.Info("setting zebedeeRoot from os env var", nil)
+		zebedeeRoot = os.Getenv(zebedeeRootEnv)
+	}
+
+	log.Info("config", log.Data{"zebedeeRoot": zebedeeRoot})
+
+	publishLogPath = path.Join(zebedeeRoot, zebedeeDir, publishLogDir)
 
 	runApp()
 }
