@@ -121,7 +121,7 @@ func loadCollectionFiles() {
 	}
 
 	sort.SliceStable(publishes, func(i, j int) bool {
-		return publishes[i].ModTime().After(publishes[j].ModTime())
+		return publishes[i].ModTime().Before(publishes[j].ModTime())
 	})
 }
 
