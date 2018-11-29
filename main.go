@@ -123,6 +123,13 @@ func loadCollectionFiles() {
 	sort.SliceStable(publishes, func(i, j int) bool {
 		return publishes[i].ModTime().Before(publishes[j].ModTime())
 	})
+
+	if len(publishes) > 15 {
+		// TODO for now return the last 15
+		// Consider adding some pagination feature in future
+		publishes = publishes[:15]
+	}
+
 }
 
 func calculatePublishTime(index int) {
