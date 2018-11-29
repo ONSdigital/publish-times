@@ -38,9 +38,11 @@ func WriteHelpMenu() {
 }
 
 func WriteHeader() {
+	fmt.Println()
 	fmt.Printf(" %s\n", Key("#####################"))
 	fmt.Printf(" %s %s %s\n", Key("###"), Bold(Val("Publish Times")), Key("###"))
 	fmt.Printf(" %s\n", Key("#####################"))
+	fmt.Println()
 }
 
 func Write(value string) {
@@ -52,18 +54,18 @@ func WriteNewLine(value string) {
 }
 
 func WriteFiles(files []os.FileInfo) {
-	fmt.Fprintf(w, "%s\t %s\t %s\t\n", Key("index"), Val("filename"), Key("date published"))
+	fmt.Fprintf(w, "%s\t %s\t %s\t\n", Key("index"), Val("filename"), Val2("date published"))
 
 	for i, f := range files {
 		lastMod := f.ModTime().Format("Mon Jan _2 15:04:05 2006")
-		fmt.Fprintf(w, "- %d\t %s\t %s\t\n", Key(i), Val(f.Name()), Key(lastMod))
+		fmt.Fprintf(w, "- %d\t %s\t %s\t\n", Key(i), Val(f.Name()), Val2(lastMod))
 	}
 	w.Flush()
 }
 
 func WritePublishTime(file string, publishTime float64) {
-	//fmt.Fprintf(w, "%s %s\n", Key("#>"), Val("Publish time:"))
-	fmt.Fprintf(w, "%s %s\t%s\t\n", Key("#>"), Val(file), Key(fmt.Sprintf("%f seconds", publishTime)))
+	fmt.Fprintf(w, "%s %s\t%s\t\n", Key("#>"), Val("Filename"), Val2("Seconds"))
+	fmt.Fprintf(w, "%s %s\t%s\t\n", Key("#>"), Val(file), Val2(fmt.Sprintf("%f", publishTime)))
 	w.Flush()
 }
 
@@ -73,6 +75,10 @@ func Key(i interface{}) Value {
 
 func Val(i interface{}) Value {
 	return Cyan(i)
+}
+
+func Val2(i interface{}) Value {
+	return Magenta(i)
 }
 
 func WritePrompt() {
