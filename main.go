@@ -43,23 +43,18 @@ func main() {
 	console.Init()
 	log.HumanReadable = true
 
-	zebRootFlag := flag.String("zebRoot", "", "")
+	publishLogFlag := flag.String("publishLog", "", "")
 	flag.Parse()
 
-	var zebedeeRoot string
-
-	if len(*zebRootFlag) > 0 {
-		log.Info("setting zebedeeRoot from cmd flag", nil)
-		zebedeeRoot = *zebRootFlag
+	if len(*publishLogFlag) > 0 {
+		log.Info("setting publish log path from cmd flag", nil)
+		publishLogPath = *publishLogFlag
 	} else {
-		log.Info("setting zebedeeRoot from os env var", nil)
-		zebedeeRoot = os.Getenv(zebedeeRootEnv)
+		log.Info("setting publish log path from os env var", nil)
+		publishLogPath = path.Join(os.Getenv(zebedeeRootEnv), zebedeeDir, publishLogDir)
 	}
 
-	log.Info("config", log.Data{"zebedeeRoot": zebedeeRoot})
-
-	publishLogPath = path.Join(zebedeeRoot, zebedeeDir, publishLogDir)
-
+	log.Info("config", log.Data{"publishLogPath": publishLogPath})
 	runApp()
 }
 
