@@ -7,8 +7,10 @@ import (
 	"github.com/daiLlew/publish-times/console"
 	"io/ioutil"
 	"os"
+	"os/exec"
 	"path"
 	"path/filepath"
+	"sort"
 	"strconv"
 	"strings"
 	"time"
@@ -22,13 +24,14 @@ const (
 
 	// commands
 	quit            = "q"
+	clearTerminal   = "clear"
 	help            = "h"
 	list            = "ls"
 	showPublishTime = "pt "
 )
 
 var publishLogPath string
-var publishes = make([]string, 0)
+var publishes = make([]os.FileInfo, 0)
 
 type publishTimes struct {
 	PublishStartDate string `json:"publishStartDate"`
@@ -45,6 +48,7 @@ func main() {
 
 func runApp() {
 	sc := bufio.NewScanner(os.Stdin)
+	loadCollectionFiles()
 
 	console.WriteHeader()
 	console.WriteHelpMenu()
@@ -63,13 +67,19 @@ func processCommand(input string) {
 		exit()
 	}
 
+	if input == clearTerminal {
+		clear()
+		return
+	}
+
 	if input == help {
 		console.WriteHelpMenu()
 		return
 	}
 
 	if input == list {
-		listPublishLog()
+		loadCollectionFiles()
+		console.WriteFiles(publishes)
 		return
 	}
 
@@ -83,37 +93,31 @@ func processCommand(input string) {
 		calculatePublishTime(index)
 		return
 	}
-
 }
 
-func listPublishLog() {
-	files, err := filepath.Glob(publishLogPath + "/*.json")
+func loadCollectionFiles() {
+	infos, err := ioutil.ReadDir(publishLogPath)
 	if err != nil {
 		exitErr(err)
 	}
 
-	publishes = files
-	output := make([]string, 0)
-	for _, f := range publishes {
-		file, err := filepath.Rel(publishLogPath, f)
-		if err != nil {
-			exitErr(err)
+	publishes = make([]os.FileInfo, 0)
+	for _, i := range infos {
+		if !i.IsDir() && filepath.Ext(i.Name()) == ".json" {
+			publishes = append(publishes, i)
 		}
-
-		output = append(output, file)
 	}
 
-	console.WriteFiles(output)
+	sort.SliceStable(publishes, func(i, j int) bool {
+		return publishes[i].ModTime().After(publishes[j].ModTime())
+	})
 }
 
 func calculatePublishTime(index int) {
-	filePath := publishes[index]
-	fileName, err := filepath.Rel(publishLogPath, filePath)
-	if err != nil {
-		exitErr(err)
-	}
+	fileInfo := publishes[index]
+	filename := filepath.Join(publishLogPath, fileInfo.Name())
 
-	b, err := ioutil.ReadFile(filePath)
+	b, err := ioutil.ReadFile(filename)
 	if err != nil {
 		exitErr(err)
 	}
@@ -129,7 +133,13 @@ func calculatePublishTime(index int) {
 		exitErr(err)
 	}
 
-	console.WritePublishTime(fileName, publishTime)
+	console.WritePublishTime(fileInfo.Name(), publishTime)
+}
+
+func clear() {
+	cmd := exec.Command("clear")
+	cmd.Stdout = os.Stdout
+	cmd.Run()
 }
 
 func exit() {

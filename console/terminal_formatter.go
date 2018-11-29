@@ -13,11 +13,11 @@ var (
 )
 
 func Init() {
-	w = new(tabwriter.Writer)
-	w.Init(os.Stdout, 0, 8, 0, '\t', 0)
+	w = tabwriter.NewWriter(os.Stdout, 0, 0, 1, ' ', tabwriter.TabIndent)
 
 	helpMenu = []Option{
 		{"q", "Quit."},
+		{"clear", "Clear the terminal"},
 		{"h", "Display the options menu."},
 		{"ls", "List the collection json files in the publish log dir with an index."},
 		{"pt <index>", "Get the publish time for the collection with the specified index."},
@@ -51,19 +51,19 @@ func WriteNewLine(value string) {
 	fmt.Printf("%s\n", Key(value))
 }
 
-func WriteFiles(files []string) {
-	fmt.Fprintf(w, "%s %s\n", Key("#>"), Val("Collection json files:"))
+func WriteFiles(files []os.FileInfo) {
+	fmt.Fprintf(w, "%s\t %s\t %s\t\n", Key("index"), Val("filename"), Key("date published"))
 
 	for i, f := range files {
-		fmt.Fprintf(w, "- %d\t%s\n", Key(i), Val(f))
+		lastMod := f.ModTime().Format("Mon Jan _2 15:04:05 2006")
+		fmt.Fprintf(w, "- %d\t %s\t %s\t\n", Key(i), Val(f.Name()), Key(lastMod))
 	}
 	w.Flush()
 }
 
 func WritePublishTime(file string, publishTime float64) {
-	fmt.Fprintf(w, "%s %s\n", Key("#>"), Val("Publish time:"))
-	fmt.Fprintf(w, "- %s\t%s\n", Key("file"), Val(file))
-	fmt.Fprintf(w, "- %s\t%s\n", Key("time"), Val(fmt.Sprintf("%f seconds", publishTime)))
+	//fmt.Fprintf(w, "%s %s\n", Key("#>"), Val("Publish time:"))
+	fmt.Fprintf(w, "%s %s\t%s\t\n", Key("#>"), Val(file), Key(fmt.Sprintf("%f seconds", publishTime)))
 	w.Flush()
 }
 
