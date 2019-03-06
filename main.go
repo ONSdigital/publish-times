@@ -2,13 +2,15 @@ package main
 
 import (
 	"bufio"
+	"bytes"
 	"encoding/json"
 	"flag"
-	"github.com/ONSdigital/go-ns/log"
+	"github.com/ONSdigital/log.go/log"
 	"github.com/daiLlew/publish-times/console"
 	"io/ioutil"
 	"os"
 	"os/exec"
+	"path"
 	"path/filepath"
 	"sort"
 	"strconv"
@@ -34,31 +36,32 @@ const (
 var publishLogPath string
 var publishes = make([]os.FileInfo, 0)
 
-type publishTimes struct {
+type publishedCollection struct {
 	PublishStartDate string `json:"publishStartDate"`
 	PublishEndDate   string `json:"publishEndDate"`
 }
 
 func main() {
 	console.Init()
-	log.HumanReadable = true
+	log.Namespace = "publish-times"
 
 	publishLogFlag := flag.String("publishLogDir", "", "override - use this value instead of the env config")
 	flag.Parse()
 
 	if len(*publishLogFlag) > 0 {
-		log.Info("setting publish log path from cmd flag", nil)
+		log.Event(nil, "setting publish log path from cmd flag", nil)
 		publishLogPath = *publishLogFlag
 	} else {
 		publishLogPath = os.Getenv(publishLogDirEnv)
-		log.Info("setting publish log path from os env var", log.Data{publishLogDirEnv: publishLogPath})
+		log.Event(nil, "setting publish log path from os env var", log.Data{publishLogDirEnv: publishLogPath})
 	}
 
-	log.Info("config", log.Data{"publishLogPath": publishLogPath})
+	log.Event(nil, "configuration", log.Data{"publishLogPath": publishLogPath})
 	runApp()
 }
 
 func runApp() {
+
 	sc := bufio.NewScanner(os.Stdin)
 	loadCollectionFiles()
 
@@ -96,15 +99,30 @@ func processCommand(input string) {
 	}
 
 	if strings.HasPrefix(input, showPublishTime) {
-		args := strings.Split(input, showPublishTime)
-
-		index, err := strconv.Atoi(strings.TrimSpace(args[1]))
-		if err != nil {
-			exitErr(err)
-		}
-		calculatePublishTime(index)
-		return
+		showPublishDetails(input)
 	}
+}
+
+func showPublishDetails(input string) {
+	args := strings.Split(input, showPublishTime)
+
+	index, err := strconv.Atoi(strings.TrimSpace(args[1]))
+	if err != nil {
+		exitErr(err)
+	}
+
+	collection := publishes[index]
+	publishTime := calculatePublishTime(collection)
+	fileCount, err := getPublishedFileCount(collection.Name())
+	if err != nil {
+		exitErr(err)
+	}
+
+	size, err := getPublishSize(collection.Name())
+	if err != nil {
+		exitErr(err)
+	}
+	console.WritePublishTime(collection.Name(), publishTime, fileCount, size)
 }
 
 func loadCollectionFiles() {
@@ -129,11 +147,9 @@ func loadCollectionFiles() {
 		// Consider adding some pagination feature in future
 		publishes = publishes[:15]
 	}
-
 }
 
-func calculatePublishTime(index int) {
-	fileInfo := publishes[index]
+func calculatePublishTime(fileInfo os.FileInfo) float64 {
 	filename := filepath.Join(publishLogPath, fileInfo.Name())
 
 	b, err := ioutil.ReadFile(filename)
@@ -141,18 +157,61 @@ func calculatePublishTime(index int) {
 		exitErr(err)
 	}
 
-	var times publishTimes
-	err = json.Unmarshal(b, &times)
+	var publishedCol publishedCollection
+	err = json.Unmarshal(b, &publishedCol)
 	if err != nil {
 		exitErr(err)
 	}
 
-	publishTime, err := times.calculatePublishTimes()
+	publishTime, err := publishedCol.calculatePublishTimes()
 	if err != nil {
 		exitErr(err)
 	}
 
-	console.WritePublishTime(fileInfo.Name(), publishTime)
+	return publishTime
+}
+
+func getPublishedFileCount(collectionName string) (int, error) {
+	files := exec.Command("find", getCollectionDir(collectionName), "-type", "f")
+	files.Stderr = os.Stderr
+	fOut, err := files.StdoutPipe()
+	if err != nil {
+		return 0, err
+	}
+
+	buff := bytes.NewBuffer([]byte{})
+
+	defer fOut.Close()
+	count := exec.Command("wc", "-l")
+	count.Stdin = fOut
+	count.Stdout = buff
+
+	files.Start()
+	count.Start()
+	files.Wait()
+	count.Wait()
+
+	val := strings.TrimSpace(buff.String())
+	return strconv.Atoi(val)
+}
+
+func getPublishSize(collectionDir string) (string, error) {
+	dir := getCollectionDir(collectionDir)
+
+	outBuf := bytes.NewBuffer([]byte{})
+	cmd := exec.Command("du", "-sh", dir)
+	cmd.Stdout = outBuf
+
+	if err := cmd.Run(); err != nil {
+		return "", err
+	}
+	result := outBuf.String()
+	return strings.TrimSpace(strings.Replace(result, dir, "", 1)), nil
+}
+
+func getCollectionDir(collectionName string) string {
+	collectionJSON := path.Join(publishLogPath, collectionName)
+	return strings.Replace(collectionJSON, filepath.Ext(collectionJSON), "", 1)
 }
 
 func clear() {
@@ -167,11 +226,11 @@ func exit() {
 }
 
 func exitErr(err error) {
-	log.Error(err, nil)
+	log.Event(nil, "application error", log.Error(err))
 	os.Exit(1)
 }
 
-func (p publishTimes) calculatePublishTimes() (float64, error) {
+func (p publishedCollection) calculatePublishTimes() (float64, error) {
 	start, err := time.Parse(layout, p.PublishStartDate)
 	if err != nil {
 		return 0, err

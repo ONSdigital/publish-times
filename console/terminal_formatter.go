@@ -30,9 +30,9 @@ type Option struct {
 }
 
 func WriteHelpMenu() {
-	fmt.Fprintf(w, "%s %s\n", Key("#>"), Val("Options:"))
+	fmt.Fprintf(w, "%s %s\n", Key("#>"), ValAplha("Options:"))
 	for _, item := range helpMenu {
-		fmt.Fprintf(w, "- %s\t%s\t\n", Key(item.Value), Val(item.Description))
+		fmt.Fprintf(w, "- %s\t%s\t\n", Key(item.Value), ValAplha(item.Description))
 	}
 	w.Flush()
 }
@@ -40,7 +40,7 @@ func WriteHelpMenu() {
 func WriteHeader() {
 	fmt.Println()
 	fmt.Printf(" %s\n", Key("#####################"))
-	fmt.Printf(" %s %s %s\n", Key("###"), Bold(Val("Publish Times")), Key("###"))
+	fmt.Printf(" %s %s %s\n", Key("###"), Bold(ValAplha("Publish Times")), Key("###"))
 	fmt.Printf(" %s\n", Key("#####################"))
 	fmt.Println()
 }
@@ -54,18 +54,26 @@ func WriteNewLine(value string) {
 }
 
 func WriteFiles(files []os.FileInfo) {
-	fmt.Fprintf(w, "%s\t %s\t %s\t\n", Key("index"), Val("filename"), Val2("date published"))
+	fmt.Fprintf(w, "%s\t %s\t %s\t\n", Key("Index"), ValAplha("Collection"), ValBeta("Date"))
 
 	for i, f := range files {
 		lastMod := f.ModTime().Format("Mon Jan _2 15:04:05 2006")
-		fmt.Fprintf(w, "- %d\t %s\t %s\t\n", Key(i), Val(f.Name()), Val2(lastMod))
+		fmt.Fprintf(w, "- %d\t %s\t %s\t\n", Key(i), ValAplha(f.Name()), ValBeta(lastMod))
 	}
 	w.Flush()
 }
 
-func WritePublishTime(file string, publishTime float64) {
-	fmt.Fprintf(w, "%s %s\t%s\t\n", Key("#>"), Val("Filename"), Val2("Seconds"))
-	fmt.Fprintf(w, "%s %s\t%s\t\n", Key("#>"), Val(file), Val2(fmt.Sprintf("%f", publishTime)))
+func WritePublishTime(file string, publishTime float64, fileCount int, totalSize string) {
+	fmt.Fprintf(w, "%s %s\t%s\t%s\t%s\t\n",
+		Key("- "),
+		ValAplha("Collection"),
+		ValBeta("Time (seconds)"),
+		ValAplha("Count"),
+		ValBeta("Size"),
+	)
+
+	// fmt.Fprintf(w, "%s %s\t%s\t%d\t%s\t\n", Key("- "), ValAplha(file), ValBeta(fmt.Sprintf("%f", publishTime)), ValAplha(fileCount), ValBeta(totalSize))
+	fmt.Fprintf(w, "%s %s\t%s\t%d\t%s\t\n", Key("- "), ValAplha(file), ValBeta(fmt.Sprintf("%f", publishTime)), ValAplha(fileCount), ValBeta(totalSize))
 	w.Flush()
 }
 
@@ -73,11 +81,11 @@ func Key(i interface{}) Value {
 	return Bold(Green(i))
 }
 
-func Val(i interface{}) Value {
+func ValAplha(i interface{}) Value {
 	return Cyan(i)
 }
 
-func Val2(i interface{}) Value {
+func ValBeta(i interface{}) Value {
 	return Magenta(i)
 }
 
@@ -86,5 +94,5 @@ func WritePrompt() {
 }
 
 func WriteExit() {
-	fmt.Printf("%s %s\n", Key("#>"), Val("goodbye!"))
+	fmt.Printf("%s %s\n", Key("#>"), ValAplha("goodbye!"))
 }
