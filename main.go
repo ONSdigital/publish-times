@@ -8,8 +8,8 @@ import (
 	"github.com/ONSdigital/publish-times/summary"
 	"io/ioutil"
 	"os"
-	"os/exec"
 	"path/filepath"
+	"regexp"
 	"sort"
 	"strconv"
 	"strings"
@@ -24,6 +24,10 @@ const (
 	help            = "h"
 	list            = "ls"
 	showPublishTime = "pt "
+	rangeRegex      = `range\(\s*\d+\s*,\s*\d+\s*\)`
+
+	rangePrefix = "range("
+	rangeSuffix = ")"
 )
 
 var (
@@ -58,7 +62,7 @@ func main() {
 
 func begin() {
 	sc := bufio.NewScanner(os.Stdin)
-	loadPublishedCollections()
+	loadAllPublishedCollections()
 
 	console.WriteHeader()
 	console.WriteHelpMenu()
@@ -67,42 +71,92 @@ func begin() {
 	for sc.Scan() {
 		input := sc.Text()
 
-		processCommand(input)
+		err := processCommand(input)
+		if err != nil {
+			handleInputErr(err)
+		}
 		console.WritePrompt()
 	}
 }
 
-func processCommand(input string) {
+func processCommand(input string) error {
 	if input == quit {
 		exit()
 	}
 
 	if input == clearTerminal {
-		clear()
-		return
+		console.Clear()
+		return nil
 	}
 
 	if input == help {
 		console.WriteHelpMenu()
-		return
+		return nil
 	}
 
-	if input == list {
-		loadPublishedCollections()
-		console.WriteFiles(publishes)
-		return
+	if strings.HasPrefix(input, list) {
+		listCollections()
+		return nil
+	}
+
+	isRange, err := regexp.MatchString(rangeRegex, input)
+	if err != nil {
+		return err
+	}
+
+	if isRange {
+		return rangeCollections(input)
 	}
 
 	if strings.HasPrefix(input, showPublishTime) {
-		if err := showPublishSummary(input); err != nil {
-			invalidInput, ok := err.(InputErr)
-			if ok {
-				console.Warn(invalidInput.Message)
-			} else {
-				exitErr(err)
-			}
-		}
+		return showPublishSummary(input)
 	}
+	return nil
+}
+
+func handleInputErr(err error) {
+	invalidInput, ok := err.(InputErr)
+	if ok {
+		console.Warn(invalidInput.Message)
+	} else {
+		exitErr(err)
+	}
+}
+
+func listCollections() {
+	loadAllPublishedCollections()
+	console.WriteFiles(publishes)
+}
+
+func rangeCollections(input string) error {
+	parsed := strings.Replace(input, rangePrefix, "", -1)
+	parsed = strings.Replace(parsed, rangeSuffix, "", -1)
+
+	values := strings.Split(parsed, ",")
+	start, err := strconv.Atoi(strings.TrimSpace(values[0]))
+	if err != nil {
+		return err
+	}
+
+	end, err := strconv.Atoi(strings.TrimSpace(values[1]))
+	if err != nil {
+		return err
+	}
+
+	if start < 0 {
+		return InputErr{"Start index cannot be less than 0"}
+	}
+
+	if start > end {
+		return InputErr{"Start index cannot be greater than end index"}
+	}
+
+	if end > len(publishes) {
+		return InputErr{"End index greater than total number of published collections"}
+	}
+
+	console.WriteRange(start, end, publishes)
+	return nil
 }
 
 func showPublishSummary(input string) error {
@@ -137,7 +191,7 @@ func showPublishSummary(input string) error {
 	return nil
 }
 
-func loadPublishedCollections() {
+func loadAllPublishedCollections() {
 	infos, err := ioutil.ReadDir(publishLogPath)
 	if err != nil {
 		exitErr(err)
@@ -154,17 +208,11 @@ func loadPublishedCollections() {
 		return publishes[i].ModTime().After(publishes[j].ModTime())
 	})
 
-	if len(publishes) > 15 {
-		// TODO for now return the last 15
+	if len(publishes) > 100 {
+		// TODO for now return the last 100
 		// Consider adding some pagination feature in future
-		publishes = publishes[:15]
+		publishes = publishes[:100]
 	}
-}
-
-func clear() {
-	cmd := exec.Command("clear")
-	cmd.Stdout = os.Stdout
-	cmd.Run()
 }
 
 func exit() {

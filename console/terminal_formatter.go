@@ -5,6 +5,7 @@ import (
 	"github.com/ONSdigital/publish-times/summary"
 	. "github.com/logrusorgru/aurora"
 	"os"
+	"os/exec"
 	"text/tabwriter"
 )
 
@@ -35,6 +36,12 @@ type PublishInfo struct {
 type Option struct {
 	Value       string
 	Description string
+}
+
+func Clear() {
+	cmd := exec.Command("clear")
+	cmd.Stdout = os.Stdout
+	cmd.Run()
 }
 
 func WriteHelpMenu() {
@@ -69,6 +76,17 @@ func WriteFiles(files []os.FileInfo) {
 	fmt.Fprintf(w, "%s\t %s\t %s\t\n", Key("Index"), ValAplha("Collection"), ValBeta("Date"))
 
 	for i, f := range files {
+		lastMod := f.ModTime().Format("Mon Jan _2 15:04:05 2006")
+		fmt.Fprintf(w, "- %d\t %s\t %s\t\n", Key(i), ValAplha(f.Name()), ValBeta(lastMod))
+	}
+	w.Flush()
+}
+
+func WriteRange(start int, end int, files []os.FileInfo) {
+	fmt.Fprintf(w, "%s\t %s\t %s\t\n", Key("Index"), ValAplha("Collection"), ValBeta("Date"))
+
+	for i := start; i <= end; i++ {
+		f := files[i]
 		lastMod := f.ModTime().Format("Mon Jan _2 15:04:05 2006")
 		fmt.Fprintf(w, "- %d\t %s\t %s\t\n", Key(i), ValAplha(f.Name()), ValBeta(lastMod))
 	}
