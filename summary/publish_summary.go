@@ -18,6 +18,7 @@ const (
 )
 
 type Details struct {
+	Index            int
 	Name             string
 	Time             float64
 	FileCount        int
@@ -26,7 +27,7 @@ type Details struct {
 	PublishEndDate   string `json:"publishEndDate"`
 }
 
-func New(fileInfo os.FileInfo, publishLogPath string) (*Details, error) {
+func New(index int, fileInfo os.FileInfo, publishLogPath string) (*Details, error) {
 	collectionJSONPath := filepath.Join(publishLogPath, fileInfo.Name())
 
 	start, end, err := getPublishStartEndTimes(collectionJSONPath)
@@ -53,6 +54,7 @@ func New(fileInfo os.FileInfo, publishLogPath string) (*Details, error) {
 	}
 
 	return &Details{
+		Index:     index,
 		Name:      fileInfo.Name(),
 		Time:      publishTime,
 		FileCount: fileCount,

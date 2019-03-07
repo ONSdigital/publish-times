@@ -126,7 +126,7 @@ func showPublishSummary(input string) error {
 		}
 
 		collection := publishes[index]
-		summary, err := summary.New(collection, publishLogPath)
+		summary, err := summary.New(index, collection, publishLogPath)
 		if err != nil {
 			return err
 		}

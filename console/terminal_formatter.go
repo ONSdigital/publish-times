@@ -76,21 +76,23 @@ func WriteFiles(files []os.FileInfo) {
 }
 
 func WritePublishSummaries(infos []*summary.Details) {
-	fmt.Fprintf(w, "%s %s\t%s\t%s\t%s\t\n",
+	fmt.Fprintf(w, "%s %s\t%s\t%s\t%s\t%s\t\n",
 		Key("- "),
-		ValAplha("Collection"),
-		ValBeta("Time (seconds)"),
-		ValAplha("Count"),
-		ValBeta("Size"),
+		ValAplha("Index"),
+		ValBeta("Collection"),
+		ValAplha("Time (seconds)"),
+		ValBeta("Count"),
+		ValAplha("Size"),
 	)
 
 	for _, info := range infos {
-		fmt.Fprintf(w, "%s %s\t%s\t%d\t%s\t\n",
+		fmt.Fprintf(w, "%s %d\t%s\t%s\t%d\t%s\t\n",
 			Key("- "),
-			ValAplha(info.Name),
-			ValBeta(fmt.Sprintf("%f", info.Time)),
-			ValAplha(info.FileCount),
-			ValBeta(info.Size),
+			ValAplha(info.Index),
+			ValBeta(info.Name),
+			ValAplha(fmt.Sprintf("%f", info.Time)),
+			ValBeta(info.FileCount),
+			ValAplha(info.Size),
 		)
 	}
 
