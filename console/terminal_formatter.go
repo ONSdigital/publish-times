@@ -2,7 +2,7 @@ package console
 
 import (
 	"fmt"
-	"github.com/daiLlew/publish-times/summary"
+	"github.com/ONSdigital/publish-times/summary"
 	. "github.com/logrusorgru/aurora"
 	"os"
 	"text/tabwriter"
