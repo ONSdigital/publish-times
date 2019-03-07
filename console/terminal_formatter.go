@@ -2,6 +2,7 @@ package console
 
 import (
 	"fmt"
+	"github.com/daiLlew/publish-times/summary"
 	. "github.com/logrusorgru/aurora"
 	"os"
 	"text/tabwriter"
@@ -22,6 +23,13 @@ func Init() {
 		{"ls", "List the collection json files in the publish log dir with an index."},
 		{"pt <index>", "Get the publish time for the collection with the specified index."},
 	}
+}
+
+type PublishInfo struct {
+	Name      string
+	Time      float64
+	FileCount int
+	Size      string
 }
 
 type Option struct {
@@ -53,6 +61,10 @@ func WriteNewLine(value string) {
 	fmt.Printf("%s\n", Key(value))
 }
 
+func Warn(i interface{}) {
+	fmt.Printf("%s %s\n", Key("#>"), Red(i))
+}
+
 func WriteFiles(files []os.FileInfo) {
 	fmt.Fprintf(w, "%s\t %s\t %s\t\n", Key("Index"), ValAplha("Collection"), ValBeta("Date"))
 
@@ -63,7 +75,7 @@ func WriteFiles(files []os.FileInfo) {
 	w.Flush()
 }
 
-func WritePublishTime(file string, publishTime float64, fileCount int, totalSize string) {
+func WritePublishSummaries(infos []*summary.Details) {
 	fmt.Fprintf(w, "%s %s\t%s\t%s\t%s\t\n",
 		Key("- "),
 		ValAplha("Collection"),
@@ -72,8 +84,16 @@ func WritePublishTime(file string, publishTime float64, fileCount int, totalSize
 		ValBeta("Size"),
 	)
 
-	// fmt.Fprintf(w, "%s %s\t%s\t%d\t%s\t\n", Key("- "), ValAplha(file), ValBeta(fmt.Sprintf("%f", publishTime)), ValAplha(fileCount), ValBeta(totalSize))
-	fmt.Fprintf(w, "%s %s\t%s\t%d\t%s\t\n", Key("- "), ValAplha(file), ValBeta(fmt.Sprintf("%f", publishTime)), ValAplha(fileCount), ValBeta(totalSize))
+	for _, info := range infos {
+		fmt.Fprintf(w, "%s %s\t%s\t%d\t%s\t\n",
+			Key("- "),
+			ValAplha(info.Name),
+			ValBeta(fmt.Sprintf("%f", info.Time)),
+			ValAplha(info.FileCount),
+			ValBeta(info.Size),
+		)
+	}
+
 	w.Flush()
 }
 
