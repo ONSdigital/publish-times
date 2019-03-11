@@ -2,7 +2,7 @@ package console
 
 import (
 	"fmt"
-	"github.com/ONSdigital/publish-times/summary"
+	"github.com/ONSdigital/publish-times/collections"
 	. "github.com/logrusorgru/aurora"
 	"os"
 	"os/exec"
@@ -22,7 +22,8 @@ func Init() {
 		{"clear", "Clear the terminal"},
 		{"h", "Display the options menu."},
 		{"ls", "List the collection json files in the publish log dir with an index."},
-		{"pt <index>", "Get the publish time for the collection with the specified index."},
+		{"pt <i> | pt <i>, <j>... <n>", "Get the publish time for the collection(s) with the specified index/indices."},
+		{"range(i, j)", "List the collections from i to j"},
 	}
 }
 
@@ -93,7 +94,7 @@ func WriteRange(start int, end int, files []os.FileInfo) {
 	w.Flush()
 }
 
-func WritePublishSummaries(infos []*summary.Details) {
+func WritePublishSummaries(infos []*collections.PublishSummary) {
 	fmt.Fprintf(w, "%s %s\t%s\t%s\t%s\t%s\t\n",
 		Key("- "),
 		ValAplha("Index"),
